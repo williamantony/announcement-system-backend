@@ -1,6 +1,12 @@
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+dotenv.config({
+  path: path.join(__dirname, '../', '.env'),
+});
 
 const {
+  MODE,
   DEV_DB_FILE,
   PROD_DB_HOST,
   PROD_DB_USER,
@@ -8,7 +14,7 @@ const {
   PROD_DB_NAME,
 } = process.env;
 
-module.exports = {
+const config = {
   development: {
     client: 'sqlite3',
     connection: {
@@ -16,7 +22,6 @@ module.exports = {
     },
     useNullAsDefault: true,
   },
-
   production: {
     client: 'mysql',
     connection: {
@@ -27,3 +32,5 @@ module.exports = {
     },
   },
 };
+
+module.exports = MODE === 'DEV' ? config.development : config.production;
