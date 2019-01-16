@@ -41,4 +41,45 @@ Router.post('/', (req, res) => {
   
 });
 
+Router.put('/', (req, res) => {
+  const {
+    event_id,
+    title,
+  } = req.body;
+
+  knex('events')
+    .where({ event_id })
+    .update({ title })
+    .then(() => {
+
+      res.json({
+        data: {
+          event: {
+            id: event_id,
+            title,
+          },
+        },
+        status: {
+          hasError: false,
+          error: null,
+          message: '',
+        },
+      });
+
+    })
+    .catch(updateError => {
+
+      res.json({
+        data: {},
+        status: {
+          hasError: true,
+          error: 'UPDATE_ERROR',
+          message: '',
+        },
+      });
+
+    });
+
+});
+
 module.exports = Router;
