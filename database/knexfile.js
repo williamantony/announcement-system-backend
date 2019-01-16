@@ -7,7 +7,10 @@ dotenv.config({
 
 const {
   MODE,
-  DEV_DB_FILE,
+  DEV_DB_HOST,
+  DEV_DB_USER,
+  DEV_DB_PASS,
+  DEV_DB_NAME,
   PROD_DB_HOST,
   PROD_DB_USER,
   PROD_DB_PASS,
@@ -16,11 +19,13 @@ const {
 
 const config = {
   development: {
-    client: 'sqlite3',
+    client: 'mysql',
     connection: {
-      filename: './db.sqlite3',
+      host : DEV_DB_HOST,
+      user : DEV_DB_USER,
+      password : DEV_DB_PASS,
+      database : DEV_DB_NAME,
     },
-    useNullAsDefault: true,
   },
   production: {
     client: 'mysql',
