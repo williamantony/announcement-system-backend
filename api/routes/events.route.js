@@ -82,4 +82,56 @@ Router.put('/', (req, res) => {
 
 });
 
+Router.delete('/', (req, res) => {
+  const { event_id } = req.body;
+
+  knex('events')
+    .where({ event_id })
+    .delete()
+    .then(deleteCount => {
+      
+      if (deleteCount === 1) {
+
+        res.json({
+          data: {
+            event: {
+              id: event_id,
+            },
+          },
+          status: {
+            hasError: false,
+            error: null,
+            message: '',
+          },
+        });
+    
+      } else {
+
+        res.json({
+          data: {},
+          status: {
+            hasError: true,
+            error: 'DELETE_ERROR:NOT_FOUND',
+            message: '',
+          },
+        });
+
+      }
+
+    })
+    .catch(deleteError => {
+
+      res.json({
+        data: {},
+        status: {
+          hasError: true,
+          error: 'DELETE_ERROR',
+          message: '',
+        },
+      });
+
+    });
+
+});
+
 module.exports = Router;
