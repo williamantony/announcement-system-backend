@@ -34,7 +34,35 @@ const hashPassword = (req, res, next) => {
 
 };
 
+/**
+ * Middleware to find user_id & password
+ * from users database
+ * based on provided username
+ */
+const getPasswordByUsername = (req, res, next) => {
+  const { username } = req.body;
+
+  knex('users')
+    .select('user_id', 'password')
+    .where({ username })
+    .then(response => {
+
+      if (response.length === 1) {
+        req.body.user_id = response[0].user_id;
+        req.body.passwordHash = response[0].password;
+        return next();
+      }
+
+      res.json(errorResponse('MULTI_USERNAME_ERROR'));
+
+    });
+
+};
+
 module.exports = {
   // Sign Up
   hashPassword,
+  
+  // Login
+  getPasswordByUsername,
 };
