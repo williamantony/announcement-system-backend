@@ -116,6 +116,15 @@ const encryptUserData = (req, res, next) => {
 
 };
 
+/**
+ * If all the previous steps of Login passes
+ * it will send JWT Token back to the client
+ */
+const sendToken = (req, res) => {
+  const { token } = req.body;
+  res.json(successResponse({ token }));
+};
+
 
 /**
  * Middleware for decoding user id
@@ -149,6 +158,7 @@ module.exports = {
   getPasswordByUsername,
   comparePasswords,
   encryptUserData,
+  sendToken,
 
   decryptUserData,
 };
