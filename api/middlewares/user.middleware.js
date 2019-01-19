@@ -116,6 +116,31 @@ const encryptUserData = (req, res, next) => {
 
 };
 
+
+/**
+ * Middleware for decoding user id
+ * from encrypted session token
+ */
+const decryptUserData = (req, res, next) => {
+  const { token } = req.body;
+
+  const jwtOptions = {
+    algorithm: 'HS256',
+  };
+
+  jwt.verify(token, JWT_SECRET, jwtOptions, (error, decoded) => {
+
+    if (!error) {
+      req.body.decoded = decoded;
+      return next();
+    }
+
+    res.json(errorResponse('JWT_VERIFICATION_ERROR'));
+
+  });
+
+};
+
 module.exports = {
   // Sign Up
   hashPassword,
@@ -124,4 +149,6 @@ module.exports = {
   getPasswordByUsername,
   comparePasswords,
   encryptUserData,
+
+  decryptUserData,
 };
