@@ -1,5 +1,6 @@
 const path = require('path');
 const dotenv = require('dotenv');
+const uuid = require('uuid/v4');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const knex = require('../../database/knex');
@@ -21,17 +22,16 @@ const {
  * Middleware for hashing passwords
  * during signup and password changes.
  */
-const hashPassword = (req, res, next) => {
+const hashPassword = async (req, res, next) => {
+  const { password } = req._;
 
-  bcrypt.hash(req.body.password, Number(BCRYPT_SALT_ROUNDS))
-    .then(hash => {
-      req.body.password = hash;
-      return next();
-    })
-    .catch((error) => {
-      res.json(errorResponse('BCRYPT_HASH_ERROR'));
-    });
-
+  try {
+    const hash = await bcrypt.hash(password, Number(BCRYPT_SALT_ROUNDS));
+    req._.password = hash;
+    return next();
+  } catch (error) {
+    res.json(errorResponse('BCRYPT_HASH_ERROR'));
+  }
 };
 
 /**
@@ -39,81 +39,72 @@ const hashPassword = (req, res, next) => {
  * from users database
  * based on provided username
  */
-const getPasswordByUsername = (req, res, next) => {
+const getPasswordByUsername = async (req, res, next) => {
   const { username } = req.body;
 
-  knex('users')
-    .select('user_id', 'password')
-    .where({ username })
-    .then(response => {
-
-      if (response.length === 1) {
-        req.body.user_id = response[0].user_id;
-        req.body.passwordHash = response[0].password;
-        return next();
-      }
-
+  try {
+    const response = await knex('users').select('user_id', 'password').where({ username });
+    if (response.length === 1) {
+      req.body.user_id = response[0].user_id;
+      req.body.passwordHash = response[0].password;
+      return next();
+    } else {
       res.json(errorResponse('MULTI_USERNAME_ERROR'));
-
-    });
-
+    }
+  } catch (error) {
+    res.json(errorResponse('GET_PWD_ERROR'));
+  }
 };
 
 /**
  * Middleware that compares
  * user provided password with password hash stored in DB
  */
-const comparePasswords = (req, res, next) => {
-  const {
-    password,
-    passwordHash,
-  } = req.body;
+const comparePasswords = async (req, res, next) => {
+  const { password, passwordHash } = req.body;
   
-  bcrypt.compare(password, passwordHash)
-    .then(matched => {
-      
-      if (matched) {
-        req.body.user = req.body.user_id;
-        delete req.body.user_id;
-        return next();
-      }
-
+  try {
+    const matched = await bcrypt.compare(password, passwordHash);
+    if (matched) {
+      req.body.user = req.body.user_id;
+      delete req.body.user_id;
+      return next();
+    } else {
       res.json(errorResponse('WRONG_PASSWORD_ERROR'));
-
-    })
-    .catch(error => {
-      res.json(errorResponse('BCRYPT_COMPARE_ERROR'));
-    });
-
+    }
+  } catch (error) {
+    res.json(errorResponse('BCRYPT_COMPARE_ERROR'));
+  }
 };
 
 /**
  * Middleware for encrypting user id
  * during login
  */
-const encryptUserData = (req, res, next) => {
-  const { user } = req.body;
+const encryptUserData = async (req, res, next) => {
+  const { user_id } = req._;
 
-  const payload = {
-    user,
-  };
-
-  const jwtOptions = {
-    algorithm: 'HS256',
-    expiresIn: '30 minutes',
-  };
-
-  jwt.sign(payload, JWT_SECRET, jwtOptions, (error, token) => {
-
-    if (!error) {
-      req.body.token = token;
+  try {
+    const payload = {
+      user_id,
+    };
+  
+    const jwtOptions = {
+      algorithm: 'HS256',
+      expiresIn: '30 minutes',
+    };
+  
+    const token = await jwt.sign(payload, JWT_SECRET, jwtOptions);
+    
+    if (token) {
+      req._.token = token;
       return next();
-    }
-
-    res.json(errorResponse('JWT_SIGN_ERROR'));
-
-  });
-
+    } else {
+      res.json(errorResponse('JWT_SIGN_ERROR'));
+    }    
+  } catch (error) {
+    res.json(errorResponse('ENCRYPT_DATA_ERROR'));
+  }
 };
 
 /**
@@ -125,29 +116,29 @@ const sendToken = (req, res) => {
   res.json(successResponse({ token }));
 };
 
-
 /**
  * Middleware for decoding user id
  * from encrypted session token
  */
-const decryptUserData = (req, res, next) => {
-  const { token } = req.body;
+const decryptUserData = async (req, res, next) => {
+  const { token } = req._;
 
-  const jwtOptions = {
-    algorithm: 'HS256',
-  };
+  try {
+    const jwtOptions = {
+      algorithm: 'HS256',
+    };
 
-  jwt.verify(token, JWT_SECRET, jwtOptions, (error, decoded) => {
-
-    if (!error) {
-      req.body.decoded = decoded;
+    const decoded = await jwt.verify(token, JWT_SECRET, jwtOptions);
+    
+    if (decoded) {
+      req._.user_id = decoded.user_id;
       return next();
+    } else {
+      res.json(errorResponse('JWT_VERIFICATION_ERROR'));
     }
-
-    res.json(errorResponse('JWT_VERIFICATION_ERROR'));
-
-  });
-
+  } catch (error) {
+    res.json(errorResponse('DECRYPT_DATA_ERROR'));
+  }
 };
 
 module.exports = {
