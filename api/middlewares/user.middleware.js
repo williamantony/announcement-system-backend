@@ -123,6 +123,39 @@ const savePassword = async (req, res, next) => {
 };
 
 /**
+ * Process required params
+ * for the next middlewares
+ */
+const processTokenVerification = (req, res, next) => {
+  const { token } = req.params;
+
+  if (token) {
+    req._.token = token;
+    return next();
+  }
+
+  res.json(errorResponse('MISSING_REQ_PARAMS'));
+  return;
+};
+
+/**
+ * Check whether a there is a need for password
+ * typical check for new users
+ */
+const checkNeedForPassword = async (req, res, next) => {
+  const { user_id } = req._;
+
+  try {
+    await knex('users').select('password').where({ user_id });
+    const hasPassword = response[0].password === '';
+    res.json(successResponse({ hasPassword }));
+    return next();
+  } catch (error) {
+    res.json(errorResponse('CHK_PWD_ERROR'));
+  }
+};
+
+/**
  * Middleware to find user_id & password
  * from users database
  * based on provided username
@@ -231,6 +264,7 @@ const decryptUserData = async (req, res, next) => {
 
 module.exports = {
   initiate,
+  decryptUserData,
   // Sign Up
   processSignUpRequest,
   createUser,
@@ -245,5 +279,6 @@ module.exports = {
   encryptUserData,
   sendToken,
 
-  decryptUserData,
+  processTokenVerification,
+  checkNeedForPassword,
 };
