@@ -74,6 +74,23 @@ const createUser = async (req, res, next) => {
 };
 
 /**
+ * Process required params
+ * for the next middlewares
+ */
+const processSetPasswordRequest = (req, res, next) => {
+  const { password, token } = req.body;
+
+  if (password && token) {
+    req._.password = password;
+    req._.token = token;
+    return next();
+  }
+
+  res.json(errorResponse('MISSING_REQ_PARAMS'));
+  return;
+};
+
+/**
  * Middleware for hashing passwords
  * during signup and password changes.
  */
@@ -86,6 +103,22 @@ const hashPassword = async (req, res, next) => {
     return next();
   } catch (error) {
     res.json(errorResponse('BCRYPT_HASH_ERROR'));
+  }
+};
+
+/**
+ * Save user's password
+ * after signup or while changing password
+ */
+const savePassword = async (req, res, next) => {
+  const { user_id, password } = req._;
+
+  try {
+    await knex('users').update({ password }).where({ user_id });
+    res.json(successResponse());
+    return next();
+  } catch (error) {
+    res.json(errorResponse('SAVE_PWD_ERROR'));
   }
 };
 
@@ -201,7 +234,10 @@ module.exports = {
   // Sign Up
   processSignUpRequest,
   createUser,
+  // Set Password
+  processSetPasswordRequest,
   hashPassword,
+  savePassword,
   
   // Login
   getPasswordByUsername,
