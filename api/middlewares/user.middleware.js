@@ -7,6 +7,7 @@ const knex = require('../../database/knex');
 const {
   errorResponse,
   successResponse,
+  addUserLog,
 } = require('../helper');
 
 dotenv.config({
