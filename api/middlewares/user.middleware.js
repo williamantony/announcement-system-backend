@@ -19,6 +19,61 @@ const {
 } = process.env;
 
 /**
+ * Initiate API
+ */
+const initiate = (req, res, next) => {
+  req._ = {};
+  return next();
+};
+
+/**
+ * Process required params
+ * for the next middlewares
+ */
+const processSignUpRequest = (req, res, next) => {
+  const { email } = req.body;
+
+  if (email) {
+    req._.email = email;
+    req._.user_id = uuid();
+
+    return next();
+  }
+
+  res.json(errorResponse('MISSING_REQ_PARAMS'));
+  return;
+};
+
+/**
+ * Create new User with email address
+ */
+const createUser = async (req, res, next) => {
+  const { user_id, email } = req._;
+
+  try {
+    const newUser = {
+      user_id,
+      username: email,
+      email,
+      password: '',
+    };
+
+    await knex('users').insert(newUser);
+
+    addUserLog(
+      user_id,
+      'signup',
+      'user registered with email',
+    );
+
+    res.json(successResponse());
+    return next();
+  } catch (error) {
+    res.json(errorResponse('INSERT_ERROR'));
+  }
+};
+
+/**
  * Middleware for hashing passwords
  * during signup and password changes.
  */
@@ -142,7 +197,10 @@ const decryptUserData = async (req, res, next) => {
 };
 
 module.exports = {
+  initiate,
   // Sign Up
+  processSignUpRequest,
+  createUser,
   hashPassword,
   
   // Login
