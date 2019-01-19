@@ -59,10 +59,39 @@ const getPasswordByUsername = (req, res, next) => {
 
 };
 
+/**
+ * Middleware that compares
+ * user provided password with password hash stored in DB
+ */
+const comparePasswords = (req, res, next) => {
+  const {
+    password,
+    passwordHash,
+  } = req.body;
+  
+  bcrypt.compare(password, passwordHash)
+    .then(matched => {
+      
+      if (matched) {
+        req.body.user = req.body.user_id;
+        delete req.body.user_id;
+        return next();
+      }
+
+      res.json(errorResponse('WRONG_PASSWORD_ERROR'));
+
+    })
+    .catch(error => {
+      res.json(errorResponse('BCRYPT_COMPARE_ERROR'));
+    });
+
+};
+
 module.exports = {
   // Sign Up
   hashPassword,
   
   // Login
   getPasswordByUsername,
+  comparePasswords,
 };
