@@ -87,6 +87,35 @@ const comparePasswords = (req, res, next) => {
 
 };
 
+/**
+ * Middleware for encrypting user id
+ * during login
+ */
+const encryptUserData = (req, res, next) => {
+  const { user } = req.body;
+
+  const payload = {
+    user,
+  };
+
+  const jwtOptions = {
+    algorithm: 'HS256',
+    expiresIn: '30 minutes',
+  };
+
+  jwt.sign(payload, JWT_SECRET, jwtOptions, (error, token) => {
+
+    if (!error) {
+      req.body.token = token;
+      return next();
+    }
+
+    res.json(errorResponse('JWT_SIGN_ERROR'));
+
+  });
+
+};
+
 module.exports = {
   // Sign Up
   hashPassword,
@@ -94,4 +123,5 @@ module.exports = {
   // Login
   getPasswordByUsername,
   comparePasswords,
+  encryptUserData,
 };
