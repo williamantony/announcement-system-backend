@@ -32,11 +32,16 @@ const initiate = (req, res, next) => {
  * for the next middlewares
  */
 const processSignUpRequest = (req, res, next) => {
-  const { email } = req.body;
+  const { email, firstname, lastname } = req.body;
 
   if (email) {
-    req._.email = email;
-    req._.user_id = uuid();
+    req._ = {
+      ...req._,
+      user_id: uuid(),
+      email,
+      firstname,
+      lastname,
+    };
 
     return next();
   }
@@ -60,17 +65,58 @@ const createUser = async (req, res, next) => {
     };
 
     await knex('users').insert(newUser);
-
-    addUserLog(
-      user_id,
-      'signup',
-      'user registered with email',
-    );
-
-    res.json(successResponse());
+    
     return next();
   } catch (error) {
     res.json(errorResponse('INSERT_ERROR'));
+  }
+};
+
+/**
+ * Save info related to new User
+ */
+const savePrimaryUserInfo = async (req, res, next) => {
+  const {
+    user_id,
+    email,
+    firstname,
+    lastname,
+  } = req._;
+
+  try {
+    const nameEntry = {
+      data_id: uuid(),
+      user_id,
+      name: 'name',
+      value: JSON.stringify({
+        firstname,
+        lastname,
+      }),
+    };
+
+    const emailEntry = {
+      data_id: uuid(),
+      user_id,
+      name: 'email',
+      value: JSON.stringify({
+        type: 'primary',
+        email,
+      }),
+    };
+
+    await knex('users_data').insert([ nameEntry, emailEntry ]);
+
+    addUserLog(
+      user_id,
+      'signin',
+      'user registered with email, firstname & lastname',
+    );
+
+    // res.json(successResponse());
+    return next();
+  } catch (error) {
+    console.log(error);
+    res.json(errorResponse('SAVE_DATA_ERROR'));
   }
 };
 
@@ -128,7 +174,7 @@ const savePassword = async (req, res, next) => {
  * for the next middlewares
  */
 const processTokenVerification = (req, res, next) => {
-  const { token } = req.params;
+  const { token } = req.body;
 
   if (token) {
     req._.token = token;
@@ -147,9 +193,16 @@ const checkNeedForPassword = async (req, res, next) => {
   const { user_id } = req._;
 
   try {
-    await knex('users').select('password').where({ user_id });
-    const hasPassword = response[0].password === '';
-    res.json(successResponse({ hasPassword }));
+    const response = await knex('users').select('password').where({ user_id });
+    let hasPassword = false;
+    if (response.length > 0) {
+      hasPassword = response[0].password !== '';
+    }
+    req._.hasPassword = hasPassword;
+    res.json(successResponse({
+      hasPassword,
+      verified: true,
+    }));
     return next();
   } catch (error) {
     res.json(errorResponse('CHK_PWD_ERROR'));
@@ -234,7 +287,7 @@ const encryptUserData = async (req, res, next) => {
  * it will send JWT Token back to the client
  */
 const sendToken = (req, res) => {
-  const { token } = req.body;
+  const { token } = req._;
   res.json(successResponse({ token }));
 };
 
@@ -269,6 +322,7 @@ module.exports = {
   // Sign Up
   processSignUpRequest,
   createUser,
+  savePrimaryUserInfo,
   // Set Password
   processSetPasswordRequest,
   hashPassword,
