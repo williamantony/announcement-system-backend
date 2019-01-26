@@ -213,7 +213,7 @@ const checkNeedForPassword = async (req, res, next) => {
  * Process required params
  * for the next middlewares
  */
-const processSignInRequest = () => {
+const processSignInRequest = (req, res, next) => {
   const { username, password } = req.body;
 
   if (username && password) {
@@ -232,16 +232,16 @@ const processSignInRequest = () => {
  * based on provided username
  */
 const getPasswordByUsername = async (req, res, next) => {
-  const { username } = req.body;
+  const { username } = req._;
 
   try {
     const response = await knex('users').select('user_id', 'password').where({ username });
     if (response.length === 1) {
-      req.body.user_id = response[0].user_id;
-      req.body.passwordHash = response[0].password;
+      req._.user_id = response[0].user_id;
+      req._.passwordHash = response[0].password;
       return next();
     } else {
-      res.json(errorResponse('MULTI_USERNAME_ERROR'));
+      res.json(errorResponse('INVALID_USERNAME_ERROR'));
     }
   } catch (error) {
     res.json(errorResponse('GET_PWD_ERROR'));
@@ -253,13 +253,11 @@ const getPasswordByUsername = async (req, res, next) => {
  * user provided password with password hash stored in DB
  */
 const comparePasswords = async (req, res, next) => {
-  const { password, passwordHash } = req.body;
+  const { password, passwordHash } = req._;
   
   try {
     const matched = await bcrypt.compare(password, passwordHash);
     if (matched) {
-      req.body.user = req.body.user_id;
-      delete req.body.user_id;
       return next();
     } else {
       res.json(errorResponse('WRONG_PASSWORD_ERROR'));
