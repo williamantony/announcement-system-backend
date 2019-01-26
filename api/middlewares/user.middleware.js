@@ -34,7 +34,7 @@ const initiate = (req, res, next) => {
 const processSignUpRequest = (req, res, next) => {
   const { email, firstname, lastname } = req.body;
 
-  if (email) {
+  if (email && firstname && lastname) {
     req._ = {
       ...req._,
       user_id: uuid(),
@@ -210,6 +210,23 @@ const checkNeedForPassword = async (req, res, next) => {
 };
 
 /**
+ * Process required params
+ * for the next middlewares
+ */
+const processSignInRequest = () => {
+  const { username, password } = req.body;
+
+  if (username && password) {
+    req._.username = username;
+    req._.password = password;
+    return next();
+  }
+
+  res.json(errorResponse('MISSING_REQ_PARAMS'));
+  return;
+};
+
+/**
  * Middleware to find user_id & password
  * from users database
  * based on provided username
@@ -329,6 +346,7 @@ module.exports = {
   savePassword,
   
   // Login
+  processSignInRequest,
   getPasswordByUsername,
   comparePasswords,
   encryptUserData,
