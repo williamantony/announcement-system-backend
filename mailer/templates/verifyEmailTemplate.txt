@@ -1,0 +1,11 @@
+[[[_ACCOUNT_FIRSTNAME_]]],
+
+Thank you for signing up!
+
+For security reasons, you are expected to verify the ownership of the email address you used to register. Upon successful verification, you will be asked to create a strong password. Your account will be activated immediately after verification.
+
+Account Email: 
+[[[_ACCOUNT_EMAIL_]]]
+
+Click Or, copy and paste the following web address into a browser.
+[[[_VERIFICATION_URL_]]]
