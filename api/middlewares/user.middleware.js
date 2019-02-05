@@ -1,9 +1,11 @@
 const path = require('path');
+const fs = require('fs');
 const dotenv = require('dotenv');
 const uuid = require('uuid/v4');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const knex = require('../../database/knex');
+const mailgun = require('../../mailer/mailgun');
 const {
   errorResponse,
   successResponse,
@@ -302,8 +304,8 @@ const encryptUserData = async (req, res, next) => {
  * it will send JWT Token back to the client
  */
 const sendToken = (req, res) => {
-  const { token } = req._;
-  res.json(successResponse({ token }));
+  const { token, user_id } = req._;
+  res.json(successResponse({ token, user_id }));
 };
 
 /**
@@ -331,18 +333,47 @@ const decryptUserData = async (req, res, next) => {
   }
 };
 
+/**
+ * 
+ */
+const processEmailVerification = (req, res, next) => {
+  const { firstname, email, token } = req.body;
+
+  if (email && token) {
+    req._ = {
+      firstname,
+      email,
+      token,
+    };
+
+    return next();
+  }
+
+  res.json(errorResponse('MISSING_REQ_PARAMS'));
+  return;
+};
+
+/**
+ * 
+ */
+const sendEmailVerification = async (req, res, next) => {
+  
+};
+
 module.exports = {
   initiate,
   decryptUserData,
+
   // Sign Up
   processSignUpRequest,
   createUser,
   savePrimaryUserInfo,
+
   // Set Password
   processSetPasswordRequest,
   hashPassword,
   savePassword,
-  
+
   // Login
   processSignInRequest,
   getPasswordByUsername,
@@ -350,6 +381,11 @@ module.exports = {
   encryptUserData,
   sendToken,
 
+  // Email Verification
+  processEmailVerification,
+  sendEmailVerification,
+
+  // Verify Token
   processTokenVerification,
   checkNeedForPassword,
 };
