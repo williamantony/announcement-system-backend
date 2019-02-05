@@ -334,7 +334,8 @@ const decryptUserData = async (req, res, next) => {
 };
 
 /**
- * 
+ * Process required params
+ * for the next middlewares
  */
 const processEmailVerification = (req, res, next) => {
   const { firstname, email, token } = req.body;
@@ -354,10 +355,64 @@ const processEmailVerification = (req, res, next) => {
 };
 
 /**
- * 
+ * Sends Email with verification link
+ * for newly registered account holders
  */
 const sendEmailVerification = async (req, res, next) => {
-  
+  try {
+    const { firstname, email, token } = req._;
+    const verificationUrl = `http://localhost:3000/verify/${ token }`;
+
+    const htmlTemplatePath = path.join(__dirname, '../../mailer/templates/verifyEmailTemplate.html');
+    const textTemplatePath = path.join(__dirname, '../../mailer/templates/verifyEmailTemplate.txt');
+
+    const getHtmlTemplate = () => {
+      return new Promise((resolve, reject) => {
+        fs.readFile(htmlTemplatePath, 'utf8', (err, data) => err ? reject(err) : resolve(data));
+      });
+    };
+
+    const getTextTemplate = () => {
+      return new Promise((resolve, reject) => {
+        fs.readFile(textTemplatePath, 'utf8', (err, data) => err ? reject(err) : resolve(data));
+      });
+    };
+
+    let htmlTemplate = await getHtmlTemplate();
+    let textTemplate = await getTextTemplate();
+
+    htmlTemplate = htmlTemplate
+      .replace(/\[\[\[\_ACCOUNT_EMAIL\_\]\]\]/gi, email)
+      .replace(/\[\[\[\_ACCOUNT_FIRSTNAME\_\]\]\]/gi, firstname)
+      .replace(/\[\[\[\_VERIFICATION\_URL\_\]\]\]/gi, verificationUrl);
+
+    textTemplate = textTemplate
+      .replace(/\[\[\[\_ACCOUNT_EMAIL\_\]\]\]/gi, email)
+      .replace(/\[\[\[\_ACCOUNT_FIRSTNAME\_\]\]\]/gi, firstname)
+      .replace(/\[\[\[\_VERIFICATION\_URL\_\]\]\]/gi, verificationUrl);
+
+    const emailConfig = {
+      from: 'International Pentecostal Assembly <postmaster@email.ipachicago.org>',
+      to: email,
+      subject: 'Account Activation - IPA Chicago',
+      text: textTemplate,
+      html: htmlTemplate,
+    };
+
+    mailgun.messages().send(emailConfig, (error, body) => {
+      if (error) {
+        res.json(errorResponse('EMAIL_SENDING_ERROR'));
+        return;
+      }
+      res.json(successResponse({
+        success: true,
+        body,
+      }));
+    });
+    
+  } catch (error) {
+    res.json(errorResponse('SEND_EMAIL_VERIFICATION_ERROR'));
+  }
 };
 
 module.exports = {
