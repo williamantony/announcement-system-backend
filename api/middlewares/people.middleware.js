@@ -47,7 +47,49 @@ const processNewPersonRequest = (req, res, next) => {
   return;
 };
 
+const createPerson = async (req, res, next) => {
+  const { name } = req._;
+
+  try {
+    const newPerson = {
+      person_id: uuid(),
+      name: name.fullname,
+    };
+    req._.person_id = newPerson.person_id;
+
+    await knex('people').insert(newPerson);
+    return next();
+
+  } catch (error) {
+    res.json(errorResponse('INSERT_ERROR'));
+  }
+};
+
+const addPersonName = async (req, res, next) => {
+  const { person_id, name } = req._;
+
+  try {
+    const nameEntry = {
+      data_id: uuid(),
+      person_id,
+      name: 'name',
+      value: JSON.stringify(name),
+    };
+
+    await knex('people_data').insert(nameEntry);
+    res.json(successResponse({
+      person_id,
+    }));
+
+  } catch (error) {
+    console.log(error);
+    res.json(errorResponse('INSERT_ERROR'));
+  }
+};
+
 module.exports = {
   initiate,
   processNewPersonRequest,
+  createPerson,
+  addPersonName,
 };
