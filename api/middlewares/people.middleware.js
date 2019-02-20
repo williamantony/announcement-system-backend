@@ -104,10 +104,45 @@ const processGetPersonInfoRequest = (req, res, next) => {
   return;
 };
 
+const getPersonInfo = async (req, res, next) => {
+  const {
+    person_id,
+    returns,
+  } = req._;
+  
+  try {
+    let response = [];
+
+    if (returns.length === 0) {
+      response = await knex('people_data')
+        .select('name', 'value')
+        .where({ person_id });
+    } else {
+      response = await knex('people_data')
+        .select('name', 'value')
+        .where({ person_id })
+        .whereIn('name', returns);
+    }
+
+    if (response.length > 0) {
+      response = response.reduce((rows, row) => {
+        rows[row.name] = JSON.parse(row.value);
+        return rows;
+      }, {});
+    }
+
+    res.json(successResponse(response));
+  }
+  catch (error) {
+    res.json(errorResponse('GET_PERSON_ERROR'));
+  }
+};
+
 module.exports = {
   initiate,
   processNewPersonRequest,
   createPerson,
   addPersonName,
   processGetPersonInfoRequest,
+  getPersonInfo,
 };
