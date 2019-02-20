@@ -5,6 +5,8 @@ const {
   processNewPersonRequest,
   createPerson,
   addPersonName,
+  processGetPersonInfoRequest,
+  getPersonInfo,
 } = require('../middlewares/people.middleware');
 
 const Router = express.Router();
@@ -17,6 +19,15 @@ Router
     decryptUserData,
     createPerson,
     addPersonName,
+  );
+
+Router
+  .route('/:person_id')
+  .get(
+    initiate,
+    processGetPersonInfoRequest,
+    decryptUserData,
+    getPersonInfo,
   );
 
 module.exports = Router;
