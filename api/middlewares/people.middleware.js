@@ -16,6 +16,7 @@ const initiate = (req, res, next) => {
 const processNewPersonRequest = (req, res, next) => {
   const {
     token,
+    person_id,
     fullname,
     firstname,
     lastname,
@@ -24,12 +25,11 @@ const processNewPersonRequest = (req, res, next) => {
     postInitial,
   } = req.body;
 
-  console.log(token, fullname);
-
-  if (token && fullname) {
+  if (token && person_id && fullname) {
     req._ = {
       ...req._,
       token,
+      person_id,
       name: {
         fullname,
         firstname,
@@ -48,14 +48,13 @@ const processNewPersonRequest = (req, res, next) => {
 };
 
 const createPerson = async (req, res, next) => {
-  const { name } = req._;
+  const { person_id, name } = req._;
 
   try {
     const newPerson = {
-      person_id: uuid(),
+      person_id,
       name: name.fullname,
     };
-    req._.person_id = newPerson.person_id;
 
     await knex('people').insert(newPerson);
     return next();
@@ -80,11 +79,29 @@ const addPersonName = async (req, res, next) => {
     res.json(successResponse({
       person_id,
     }));
-
-  } catch (error) {
-    console.log(error);
+  }
+  catch (error) {
     res.json(errorResponse('INSERT_ERROR'));
   }
+};
+
+const processGetPersonInfoRequest = (req, res, next) => {
+  const { person_id } = req.params;
+  const { token, returns } = req.query;
+  
+  if (token && person_id) {
+    req._ = {
+      ...req._,
+      token,
+      person_id,
+      returns: returns || [],
+    };
+
+    return next();
+  }
+
+  res.json(errorResponse('MISSING_REQ_PARAMS'));
+  return;
 };
 
 module.exports = {
@@ -92,4 +109,5 @@ module.exports = {
   processNewPersonRequest,
   createPerson,
   addPersonName,
+  processGetPersonInfoRequest,
 };
