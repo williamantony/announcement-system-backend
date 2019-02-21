@@ -2,7 +2,8 @@ const uuid = require('uuid/v4');
 const knex = require('../../database/knex');
 const {
   successResponse,
-  errorResponse
+  errorResponse,
+  parseJSON,
 } = require('../helper');
 
 /**
@@ -85,6 +86,65 @@ const addPersonName = async (req, res, next) => {
   }
 };
 
+const processSearchPeopleRequest = (req, res, next) => {
+  const { token, filter, limit, offset } = req.query;
+  
+  if (token) {
+    req._ = {
+      ...req._,
+      token,
+      filter: filter || {},
+      limit: limit || 10,
+      offset: offset || 0,
+    };
+
+    return next();
+  }
+
+  res.json(errorResponse('MISSING_REQ_PARAMS'));
+  return;
+};
+
+const searchPeople = async (req, res, next) => {
+  const { filter, limit, offset } = req._;
+
+  try {
+    let response = [];
+
+    const queryWhere = Object.keys(filter).reduce((query, name) => {
+      const nameQuery = `LOWER(\`name\`) like LOWER('%${ name }%')`;
+      const valueQuery = `and LOWER(\`value\`) like LOWER('%${ filter[name] }%')`;
+      return `${ query } ${ nameQuery } ${ valueQuery }`.trim();
+    }, '');
+
+    response = await knex('people_data')
+      .distinct('person_id')
+      .select('person_id', 'name', 'value')
+      .whereRaw(queryWhere)
+      .limit(limit)
+      .offset(offset);
+
+    if (response.length > 0) {
+      response = response.reduce((rows, row) => {
+        return {
+          ...rows,
+          [row.person_id]: {
+            ...rows[row.person_id],
+            [row.name]: parseJSON(row.value),
+          },
+        };
+      }, {});
+    }
+
+    res.json(successResponse(response));
+    console.log(response);
+  }
+  catch (error) {
+    console.log(error);
+    res.json(errorResponse('SEARCH_PEOPLE_ERROR'));
+  }
+};
+
 const processGetPersonInfoRequest = (req, res, next) => {
   const { person_id } = req.params;
   const { token, returns } = req.query;
@@ -126,7 +186,7 @@ const getPersonInfo = async (req, res, next) => {
 
     if (response.length > 0) {
       response = response.reduce((rows, row) => {
-        rows[row.name] = JSON.parse(row.value);
+        rows[row.name] = parseJSON(row.value);
         return rows;
       }, {});
     }
@@ -143,6 +203,8 @@ module.exports = {
   processNewPersonRequest,
   createPerson,
   addPersonName,
+  processSearchPeopleRequest,
+  searchPeople,
   processGetPersonInfoRequest,
   getPersonInfo,
 };
