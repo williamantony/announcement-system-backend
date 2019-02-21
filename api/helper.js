@@ -32,8 +32,17 @@ const addUserLog = async (user_id = null, type = '', message = '') => {
   }
 };
 
+const parseJSON = (string) => {
+  try {
+    return JSON.parse(string);
+  } catch (error) {
+    return string;
+  }
+}
+
 module.exports = {
   successResponse,
   errorResponse,
   addUserLog,
+  parseJSON,
 };
