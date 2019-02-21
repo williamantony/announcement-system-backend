@@ -5,6 +5,8 @@ const {
   processNewPersonRequest,
   createPerson,
   addPersonName,
+  processSearchPeopleRequest,
+  searchPeople,
   processGetPersonInfoRequest,
   getPersonInfo,
 } = require('../middlewares/people.middleware');
@@ -19,6 +21,15 @@ Router
     decryptUserData,
     createPerson,
     addPersonName,
+  );
+
+Router
+  .route('/')
+  .get(
+    initiate,
+    processSearchPeopleRequest,
+    decryptUserData,
+    searchPeople,
   );
 
 Router
