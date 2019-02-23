@@ -9,10 +9,15 @@ const {
   searchPeople,
   processGetPersonInfoRequest,
   getPersonInfo,
+  processDeletePeopleRequest,
+  deletePeople,
 } = require('../middlewares/people.middleware');
 
 const Router = express.Router();
 
+/**
+ * Add Person
+ */
 Router
   .route('/')
   .post(
@@ -23,6 +28,9 @@ Router
     addPersonName,
   );
 
+/**
+ * Search People (list)
+ */
 Router
   .route('/')
   .get(
@@ -32,6 +40,9 @@ Router
     searchPeople,
   );
 
+/**
+ * Get Person Info
+ */
 Router
   .route('/:person_id')
   .get(
@@ -39,6 +50,18 @@ Router
     processGetPersonInfoRequest,
     decryptUserData,
     getPersonInfo,
+  );
+
+/**
+ * Delete People
+ */
+Router
+  .route('/')
+  .delete(
+    initiate,
+    processDeletePeopleRequest,
+    decryptUserData,
+    deletePeople,
   );
 
 module.exports = Router;
