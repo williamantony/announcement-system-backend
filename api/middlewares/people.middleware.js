@@ -137,10 +137,8 @@ const searchPeople = async (req, res, next) => {
     }
 
     res.json(successResponse(response));
-    console.log(response);
   }
   catch (error) {
-    console.log(error);
     res.json(errorResponse('SEARCH_PEOPLE_ERROR'));
   }
 };
@@ -198,6 +196,51 @@ const getPersonInfo = async (req, res, next) => {
   }
 };
 
+const processDeletePeopleRequest = (req, res, next) => {
+  const { token, people } = req.query;
+
+  console.log(people);
+
+  if (token && people) {
+    req._ = {
+      ...req._,
+      token,
+      people: people || [],
+    };
+
+    return next();
+  }
+
+  res.json(errorResponse('MISSING_REQ_PARAMS'));
+  return;
+};
+
+const deletePeople = async (req, res, next) => {
+  const { people } = req._;
+  try {
+    const response = await knex('people')
+      .whereIn('person_id', people)
+      .delete();
+
+    if (typeof response === 'number') {
+      if (response === people.length) {
+        res.json(successResponse({
+          status: 'COMPLETE',
+          people,
+        }));
+      } else {
+        res.json(successResponse({
+          status: 'INCOMPLETE',
+        }));
+      }
+    }
+
+  } catch (error) {
+    console.log(error);
+    res.json(errorResponse('DELETE_PEOPLE_ERROR'));
+  }
+};
+
 module.exports = {
   initiate,
   processNewPersonRequest,
@@ -207,4 +250,6 @@ module.exports = {
   searchPeople,
   processGetPersonInfoRequest,
   getPersonInfo,
+  processDeletePeopleRequest,
+  deletePeople,
 };
